@@ -63,14 +63,14 @@
   <div class="chat" id="chat"></div>
   <div style="background:var(--surface);border-top:1px solid var(--border)">
     <div class="suggestions">
-      <span class="suggestion" onclick="useSuggestion(this)">Как работает ELA pipeline?</span>
-      <span class="suggestion" onclick="useSuggestion(this)">Эндпоинты VERUM-MUSCLE</span>
-      <span class="suggestion" onclick="useSuggestion(this)">Какой API используется?</span>
+      <span class="suggestion" onclick="useSuggestion(this)">How does the ELA pipeline work?</span>
+      <span class="suggestion" onclick="useSuggestion(this)">VERUM-MUSCLE endpoints</span>
+      <span class="suggestion" onclick="useSuggestion(this)">Which API is used?</span>
       <span class="suggestion" onclick="useSuggestion(this)">B2B Cognitive Firewall</span>
-      <span class="suggestion" onclick="useSuggestion(this)">Deployment архитектура</span>
+      <span class="suggestion" onclick="useSuggestion(this)">Deployment architecture</span>
     </div>
     <div class="input-area">
-      <textarea id="input" placeholder="Спроси что-нибудь об архитектуре VERUM..." rows="1"
+      <textarea id="input" placeholder="Ask something about the VERUM architecture..." rows="1"
         onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
       <button class="send" id="sendBtn" onclick="sendMessage()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -151,9 +151,9 @@ function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(e
 
 // Check server health on load
 fetch('/api/health').then(r => r.json()).then(d => {
-  addMessage('system', `RAG pipeline готов · ${d.chunks} chunks · модель: ${d.model}\nAPI ключ хранится на сервере — клиент его никогда не видит`);
+  addMessage('system', `RAG pipeline is ready · ${d.chunks} chunks · model: ${d.model}\nThe API key is stored on the server — the client never sees it`);
 }).catch(() => {
-  addMessage('system', '⚠ Сервер недоступен. Запусти: npm start');
+  addMessage('system', '⚠ Server is unreachable. Run: npm start');
 });
 </script>
 </body>
