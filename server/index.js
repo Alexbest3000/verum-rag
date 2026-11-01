@@ -131,7 +131,7 @@ app.post('/api/chat', async (req, res) => {
 
   const prompt = `You are a technical assistant for VERUM™ — a forensic deepfake detection platform.
 Answer based ONLY on the documentation chunks below. Be precise and technical.
-Answer in the same language as the question (Russian if asked in Russian).
+Always answer in English only.
 Format endpoints and code in backticks. If info is not in chunks, say so honestly.
 
 Documentation:
