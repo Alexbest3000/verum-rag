@@ -151,7 +151,7 @@ function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(e
 
 // Check server health on load
 fetch('/api/health').then(r => r.json()).then(d => {
-  addMessage('system', `RAG pipeline is ready · ${d.chunks} chunks · model: ${d.model}\nThe API key is stored on the server — the client never sees it`);
+  addMessage('system', `RAG pipeline · ${d.chunks} chunks · model: ${d.model}\nVERUM PROJECT`);
 }).catch(() => {
   addMessage('system', '⚠ Server is unreachable. Run: npm start');
 });
