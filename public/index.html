@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VERUM RAG · Knowledge Base</title>
+<style>
+  :root {
+    --bg:#0a0c10;--surface:#111318;--surface2:#181c24;--border:#1f2533;
+    --accent:#4f8ef7;--accent2:#7c3aed;--text:#e8ecf4;--muted:#6b7a9a;
+    --success:#22c55e;--font-mono:'SF Mono','Fira Code',monospace;--font:'Inter',system-ui,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px}
+  .app{display:grid;grid-template-rows:56px 1fr auto;height:100vh;max-width:900px;margin:0 auto}
+  header{display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--surface)}
+  .logo{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--accent);font-family:var(--font-mono)}
+  .logo span{color:var(--muted);font-weight:400}
+  .badge{margin-left:auto;font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);font-family:var(--font-mono)}
+  .model-tag{font-size:10px;color:var(--muted);font-family:var(--font-mono);padding:3px 8px;border:1px solid var(--border);border-radius:4px}
+  .chat{overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+  .chat::-webkit-scrollbar{width:4px}
+  .chat::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  .msg{display:flex;gap:12px;animation:fadeIn .2s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .msg.user{flex-direction:row-reverse}
+  .avatar{width:30px;height:30px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:var(--font-mono)}
+  .msg.user .avatar{background:color-mix(in srgb,var(--accent) 20%,var(--surface2));color:var(--accent)}
+  .msg.assistant .avatar{background:color-mix(in srgb,var(--accent2) 20%,var(--surface2));color:var(--accent2)}
+  .msg.system .avatar{background:color-mix(in srgb,var(--success) 15%,var(--surface2));color:var(--success)}
+  .bubble{max-width:78%;padding:12px 14px;border-radius:10px;line-height:1.6;font-size:13.5px;border:1px solid var(--border)}
+  .msg.user .bubble{background:color-mix(in srgb,var(--accent) 8%,var(--surface));border-color:color-mix(in srgb,var(--accent) 20%,var(--border))}
+  .msg.assistant .bubble{background:var(--surface)}
+  .msg.system .bubble{background:color-mix(in srgb,var(--success) 5%,var(--surface));border-color:color-mix(in srgb,var(--success) 20%,var(--border));font-size:12px;color:var(--muted)}
+  .rag-strip{font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-bottom:6px;display:flex;gap:6px;flex-wrap:wrap}
+  .chunk-tag{padding:1px 6px;border-radius:3px;border:1px solid var(--border);background:var(--surface2)}
+  .usage{font-size:10px;color:var(--muted);margin-top:6px;font-family:var(--font-mono)}
+  .suggestions{display:flex;gap:8px;flex-wrap:wrap;padding:8px 20px 4px}
+  .suggestion{font-size:11.5px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--font-mono)}
+  .suggestion:hover{border-color:var(--accent);color:var(--accent)}
+  .input-area{padding:12px 20px 16px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:10px;align-items:flex-end}
+  textarea{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13.5px;padding:10px 14px;resize:none;outline:none;min-height:42px;max-height:120px;line-height:1.5;transition:border-color .15s}
+  textarea:focus{border-color:var(--accent)}
+  textarea::placeholder{color:var(--muted)}
+  button.send{background:var(--accent);color:#fff;border:none;border-radius:8px;width:42px;height:42px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s}
+  button.send:hover{opacity:.85}
+  button.send:disabled{opacity:.4;cursor:not-allowed}
+  .typing{display:flex;gap:4px;align-items:center;padding:4px 0}
+  .dot{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:bounce .9s infinite}
+  .dot:nth-child(2){animation-delay:.15s}
+  .dot:nth-child(3){animation-delay:.3s}
+  @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+  code{font-family:var(--font-mono);background:var(--surface2);padding:1px 5px;border-radius:3px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">VERUM<span>™</span> · RAG</div>
+    <div class="model-tag">gemini-2.0-flash</div>
+    <div class="badge">LOCAL · localhost</div>
+  </header>
+  <div class="chat" id="chat"></div>
+  <div style="background:var(--surface);border-top:1px solid var(--border)">
+    <div class="suggestions">
+      <span class="suggestion" onclick="useSuggestion(this)">Как работает ELA pipeline?</span>
+      <span class="suggestion" onclick="useSuggestion(this)">Эндпоинты VERUM-MUSCLE</span>
+      <span class="suggestion" onclick="useSuggestion(this)">Какой API используется?</span>
+      <span class="suggestion" onclick="useSuggestion(this)">B2B Cognitive Firewall</span>
+      <span class="suggestion" onclick="useSuggestion(this)">Deployment архитектура</span>
+    </div>
+    <div class="input-area">
+      <textarea id="input" placeholder="Спроси что-нибудь об архитектуре VERUM..." rows="1"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send" id="sendBtn" onclick="sendMessage()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+let busy = false;
+
+function fmt(text) {
+  return text.replace(/`([^`\n]+)`/g, '<code>$1</code>').replace(/\n/g, '<br>');
+}
+
+function addMessage(role, content, meta = {}) {
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const labels = { user: 'YOU', assistant: 'RAG', system: 'SYS' };
+  let inner = '';
+  if (meta.chunks?.length) {
+    inner += `<div class="rag-strip">Retrieved: ${meta.chunks.map(c =>
+      `<span class="chunk-tag" title="score: ${c.score.toFixed(2)}">${c.title}</span>`
+    ).join('')}</div>`;
+  }
+  inner += fmt(content);
+  if (meta.usage) {
+    inner += `<div class="usage">tokens in: ${meta.usage.input_tokens} · out: ${meta.usage.output_tokens}</div>`;
+  }
+  div.innerHTML = `<div class="avatar">${labels[role]}</div><div class="bubble">${inner}</div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function addTyping() {
+  const div = document.createElement('div');
+  div.className = 'msg assistant'; div.id = 'typing';
+  div.innerHTML = `<div class="avatar">RAG</div><div class="bubble"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  chat.appendChild(div); chat.scrollTop = chat.scrollHeight;
+}
+
+async function sendMessage() {
+  const query = input.value.trim();
+  if (!query || busy) return;
+  busy = true; sendBtn.disabled = true;
+  input.value = ''; autoResize(input);
+  addMessage('user', query);
+  addTyping();
+  try {
+    // API key is NEVER here — only hits our local proxy
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Server error ${res.status}`);
+    }
+    const data = await res.json();
+    document.getElementById('typing')?.remove();
+    addMessage('assistant', data.answer, { chunks: data.chunks, usage: data.usage });
+  } catch (e) {
+    document.getElementById('typing')?.remove();
+    addMessage('system', `⚠ ${e.message}`);
+  }
+  busy = false; sendBtn.disabled = false; input.focus();
+}
+
+function useSuggestion(el) { input.value = el.textContent; autoResize(input); input.focus(); }
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+
+// Check server health on load
+fetch('/api/health').then(r => r.json()).then(d => {
+  addMessage('system', `RAG pipeline готов · ${d.chunks} chunks · модель: ${d.model}\nAPI ключ хранится на сервере — клиент его никогда не видит`);
+}).catch(() => {
+  addMessage('system', '⚠ Сервер недоступен. Запусти: npm start');
+});
+</script>
+</body>
+</html>
